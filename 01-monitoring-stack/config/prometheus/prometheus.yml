@@ -1,0 +1,90 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'blockchain-monitoring'
+    environment: 'development'
+
+rule_files:
+  - "rules/*.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Node Exporter - System metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # cAdvisor - Container metrics
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Grafana metrics
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Redis metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 30s
+
+  # Ethereum Exporter
+  - job_name: 'ethereum-exporter'
+    static_configs:
+      - targets: ['ethereum-exporter:9091']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Polygon Exporter
+  - job_name: 'polygon-exporter'
+    static_configs:
+      - targets: ['polygon-exporter:9092']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Biometric Auth Service
+  - job_name: 'biometric-auth'
+    static_configs:
+      - targets: ['biometric-auth:3001']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Alertmanager
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets: ['alertmanager:9093']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Loki
+  - job_name: 'loki'
+    static_configs:
+      - targets: ['loki:3100']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Fluentd
+  - job_name: 'fluentd'
+    static_configs:
+      - targets: ['fluentd:24224']
+    scrape_interval: 30s
+    metrics_path: /metrics

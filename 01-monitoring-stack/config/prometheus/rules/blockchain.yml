@@ -1,0 +1,86 @@
+groups:
+  - name: blockchain.rules
+    rules:
+      # Ethereum Node Health
+      - alert: EthereumNodeDown
+        expr: up{job="ethereum-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: ethereum
+        annotations:
+          summary: "Ethereum node is down"
+          description: "Ethereum node has been down for more than 1 minute"
+
+      - alert: EthereumNodeSyncIssue
+        expr: ethereum_block_height - ethereum_peer_block_height > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: ethereum
+        annotations:
+          summary: "Ethereum node sync issue"
+          description: "Ethereum node is behind by {{ $value }} blocks"
+
+      # Polygon Node Health
+      - alert: PolygonNodeDown
+        expr: up{job="polygon-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: polygon
+        annotations:
+          summary: "Polygon node is down"
+          description: "Polygon node has been down for more than 1 minute"
+
+      - alert: PolygonNodeSyncIssue
+        expr: polygon_block_height - polygon_peer_block_height > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: polygon
+        annotations:
+          summary: "Polygon node sync issue"
+          description: "Polygon node is behind by {{ $value }} blocks"
+
+      # RPC Performance
+      - alert: HighRPCLatency
+        expr: histogram_quantile(0.95, rate(ethereum_rpc_request_duration_seconds_bucket[5m])) > 5
+        for: 2m
+        labels:
+          severity: warning
+          service: rpc
+        annotations:
+          summary: "High RPC latency"
+          description: "95th percentile RPC latency is {{ $value }}s"
+
+      - alert: HighRPCErrorRate
+        expr: rate(ethereum_rpc_requests_total{status="error"}[5m]) / rate(ethereum_rpc_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: rpc
+        annotations:
+          summary: "High RPC error rate"
+          description: "RPC error rate is {{ $value | humanizePercentage }}"
+
+      # Blockchain Network Health
+      - alert: LowPeerCount
+        expr: ethereum_peer_count < 5
+        for: 5m
+        labels:
+          severity: warning
+          service: network
+        annotations:
+          summary: "Low peer count"
+          description: "Ethereum peer count is {{ $value }}, below threshold of 5"
+
+      - alert: HighGasPrice
+        expr: ethereum_gas_price > 100000000000
+        for: 5m
+        labels:
+          severity: warning
+          service: network
+        annotations:
+          summary: "High gas price"
+          description: "Ethereum gas price is {{ $value }} wei"

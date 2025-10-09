@@ -1,0 +1,158 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Blockchain Overview",
+    "tags": ["blockchain", "monitoring"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Blockchain Node Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=~\"ethereum-exporter|polygon-exporter\"}",
+            "legendFormat": "{{job}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "red",
+                  "value": 0
+                },
+                {
+                  "color": "green",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Block Height",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "ethereum_block_height",
+            "legendFormat": "Ethereum"
+          },
+          {
+            "expr": "polygon_block_height",
+            "legendFormat": "Polygon"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "id": 3,
+        "title": "RPC Request Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(ethereum_rpc_requests_total[5m])",
+            "legendFormat": "Ethereum RPC"
+          },
+          {
+            "expr": "rate(polygon_rpc_requests_total[5m])",
+            "legendFormat": "Polygon RPC"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Requests/sec"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 8
+        }
+      },
+      {
+        "id": 4,
+        "title": "RPC Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(ethereum_rpc_requests_total{status=\"error\"}[5m]) / rate(ethereum_rpc_requests_total[5m])",
+            "legendFormat": "Ethereum Error Rate"
+          },
+          {
+            "expr": "rate(polygon_rpc_requests_total{status=\"error\"}[5m]) / rate(polygon_rpc_requests_total[5m])",
+            "legendFormat": "Polygon Error Rate"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Error Rate",
+            "max": 1,
+            "unit": "percentunit"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 16
+        }
+      },
+      {
+        "id": 5,
+        "title": "Gas Price",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "ethereum_gas_price",
+            "legendFormat": "Ethereum Gas Price"
+          },
+          {
+            "expr": "polygon_gas_price",
+            "legendFormat": "Polygon Gas Price"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Gas Price (wei)"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 24
+        }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "30s"
+  }
+}

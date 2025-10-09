@@ -1,0 +1,148 @@
+groups:
+  - name: biometric.rules
+    rules:
+      # Biometric Authentication Health
+      - alert: BiometricAuthDown
+        expr: up{job="biometric-auth"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: biometric
+        annotations:
+          summary: "Biometric authentication service is down"
+          description: "Biometric authentication service has been down for more than 1 minute"
+
+      - alert: HighBiometricFailureRate
+        expr: rate(biometric_auth_failures_total[5m]) / rate(biometric_auth_attempts_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: biometric
+        annotations:
+          summary: "High biometric failure rate"
+          description: "Biometric authentication failure rate is {{ $value | humanizePercentage }}"
+
+      - alert: BiometricAuthLatency
+        expr: histogram_quantile(0.95, rate(biometric_auth_duration_seconds_bucket[5m])) > 5
+        for: 2m
+        labels:
+          severity: warning
+          service: biometric
+        annotations:
+          summary: "High biometric authentication latency"
+          description: "95th percentile biometric auth latency is {{ $value }}s"
+
+      # WebAuthn Health
+      - alert: WebAuthnRegistrationFailure
+        expr: rate(webauthn_registration_failures_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: webauthn
+        annotations:
+          summary: "High WebAuthn registration failure rate"
+          description: "WebAuthn registration failure rate is {{ $value }} failures/second"
+
+      - alert: WebAuthnAuthenticationFailure
+        expr: rate(webauthn_authentication_failures_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: webauthn
+        annotations:
+          summary: "High WebAuthn authentication failure rate"
+          description: "WebAuthn authentication failure rate is {{ $value }} failures/second"
+
+      # Fingerprint Recognition
+      - alert: FingerprintRecognitionFailure
+        expr: rate(fingerprint_recognition_failures_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: fingerprint
+        annotations:
+          summary: "High fingerprint recognition failure rate"
+          description: "Fingerprint recognition failure rate is {{ $value }} failures/second"
+
+      - alert: FingerprintSensorError
+        expr: fingerprint_sensor_errors_total > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: fingerprint
+        annotations:
+          summary: "Fingerprint sensor error"
+          description: "Fingerprint sensor has {{ $value }} errors"
+
+      # Face Recognition
+      - alert: FaceRecognitionFailure
+        expr: rate(face_recognition_failures_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: face
+        annotations:
+          summary: "High face recognition failure rate"
+          description: "Face recognition failure rate is {{ $value }} failures/second"
+
+      - alert: FaceRecognitionLivenessFailure
+        expr: rate(face_recognition_liveness_failures_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: face
+        annotations:
+          summary: "High face recognition liveness failure rate"
+          description: "Face recognition liveness failure rate is {{ $value }} failures/second"
+
+      # QR Code Authentication
+      - alert: QRCodeGenerationFailure
+        expr: rate(qr_code_generation_failures_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: qr
+        annotations:
+          summary: "High QR code generation failure rate"
+          description: "QR code generation failure rate is {{ $value }} failures/second"
+
+      - alert: QRCodeValidationFailure
+        expr: rate(qr_code_validation_failures_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: qr
+        annotations:
+          summary: "High QR code validation failure rate"
+          description: "QR code validation failure rate is {{ $value }} failures/second"
+
+      # Security Events
+      - alert: SuspiciousBiometricActivity
+        expr: rate(biometric_auth_attempts_total{result="suspicious"}[5m]) > 0.01
+        for: 1m
+        labels:
+          severity: critical
+          service: security
+        annotations:
+          summary: "Suspicious biometric activity detected"
+          description: "Suspicious biometric activity rate is {{ $value }} attempts/second"
+
+      - alert: BiometricBruteForce
+        expr: rate(biometric_auth_attempts_total{result="failed"}[1m]) > 5
+        for: 1m
+        labels:
+          severity: critical
+          service: security
+        annotations:
+          summary: "Biometric brute force attack detected"
+          description: "Biometric brute force attack rate is {{ $value }} attempts/second"
+
+      - alert: UnauthorizedBiometricAccess
+        expr: rate(biometric_auth_attempts_total{result="unauthorized"}[5m]) > 0.1
+        for: 1m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "Unauthorized biometric access attempts"
+          description: "Unauthorized biometric access rate is {{ $value }} attempts/second"
