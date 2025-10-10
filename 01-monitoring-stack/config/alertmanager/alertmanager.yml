@@ -1,92 +1,14 @@
 global:
   smtp_smarthost: 'localhost:587'
   smtp_from: 'alerts@sec-observe-lab.com'
-  smtp_auth_username: 'alerts@sec-observe-lab.com'
-  smtp_auth_password: 'password'
 
 route:
-  group_by: ['alertname', 'cluster', 'service']
+  group_by: ['alertname']
   group_wait: 10s
   group_interval: 10s
   repeat_interval: 1h
-  receiver: 'web.hook'
-  routes:
-    - match:
-        severity: critical
-      receiver: 'critical-alerts'
-    - match:
-        severity: warning
-      receiver: 'warning-alerts'
-    - match:
-        service: biometric
-      receiver: 'biometric-alerts'
-    - match:
-        service: blockchain
-      receiver: 'blockchain-alerts'
+  receiver: 'default-receiver'
 
 receivers:
-  - name: 'web.hook'
-    webhook_configs:
-      - url: 'http://localhost:5001/'
-
-  - name: 'critical-alerts'
-    email_configs:
-      - to: 'admin@sec-observe-lab.com'
-        subject: '[CRITICAL] {{ .GroupLabels.alertname }}'
-        body: |
-          {{ range .Alerts }}
-          Alert: {{ .Annotations.summary }}
-          Description: {{ .Annotations.description }}
-          {{ end }}
-    slack_configs:
-      - api_url: 'YOUR_SLACK_WEBHOOK_URL'
-        channel: '#alerts'
-        title: 'Critical Alert'
-        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
-
-  - name: 'warning-alerts'
-    email_configs:
-      - to: 'team@sec-observe-lab.com'
-        subject: '[WARNING] {{ .GroupLabels.alertname }}'
-        body: |
-          {{ range .Alerts }}
-          Alert: {{ .Annotations.summary }}
-          Description: {{ .Annotations.description }}
-          {{ end }}
-
-  - name: 'biometric-alerts'
-    email_configs:
-      - to: 'security@sec-observe-lab.com'
-        subject: '[BIOMETRIC] {{ .GroupLabels.alertname }}'
-        body: |
-          {{ range .Alerts }}
-          Alert: {{ .Annotations.summary }}
-          Description: {{ .Annotations.description }}
-          {{ end }}
-    slack_configs:
-      - api_url: 'YOUR_SLACK_WEBHOOK_URL'
-        channel: '#security'
-        title: 'Biometric Security Alert'
-        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
-
-  - name: 'blockchain-alerts'
-    email_configs:
-      - to: 'blockchain@sec-observe-lab.com'
-        subject: '[BLOCKCHAIN] {{ .GroupLabels.alertname }}'
-        body: |
-          {{ range .Alerts }}
-          Alert: {{ .Annotations.summary }}
-          Description: {{ .Annotations.description }}
-          {{ end }}
-    slack_configs:
-      - api_url: 'YOUR_SLACK_WEBHOOK_URL'
-        channel: '#blockchain'
-        title: 'Blockchain Alert'
-        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
-
-inhibit_rules:
-  - source_match:
-      severity: 'critical'
-    target_match:
-      severity: 'warning'
-    equal: ['alertname', 'cluster', 'service']
+  - name: 'default-receiver'
+    # Sin configuración de email por ahora

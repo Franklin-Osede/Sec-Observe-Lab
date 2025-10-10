@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Sec-Observe-Lab Health Check Script
-# This script checks the health of all monitoring stack services
+# Comprehensive health check for all monitoring stack services
 
 set -e
 
@@ -29,7 +29,7 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Function to check service health
+# Function to check if a service is healthy
 check_service() {
     local service_name=$1
     local url=$2
@@ -41,257 +41,246 @@ check_service() {
         print_success "$service_name is healthy"
         return 0
     else
-        print_error "$service_name is not responding"
+        print_error "$service_name is not responding correctly"
         return 1
     fi
 }
 
-# Function to check Docker container
-check_container() {
-    local container_name=$1
+# Function to check Docker containers
+check_containers() {
+    print_status "Checking Docker containers..."
     
-    if docker ps --format "table {{.Names}}" | grep -q "^$container_name$"; then
-        if docker ps --format "table {{.Status}}" --filter "name=$container_name" | grep -q "Up"; then
-            print_success "Container $container_name is running"
-            return 0
-        else
-            print_error "Container $container_name is not running"
-            return 1
-        fi
-    else
-        print_error "Container $container_name not found"
-        return 1
-    fi
-}
-
-# Function to check service metrics
-check_metrics() {
-    local service_name=$1
-    local url=$2
-    
-    print_status "Checking $service_name metrics..."
-    
-    if curl -s "$url" | grep -q "prometheus"; then
-        print_success "$service_name metrics are available"
-        return 0
-    else
-        print_warning "$service_name metrics may not be available"
-        return 1
-    fi
-}
-
-# Function to check biometric authentication
-check_biometric_auth() {
-    print_status "Checking biometric authentication service..."
-    
-    # Check if the service is running
-    if check_service "Biometric Auth" "http://localhost:3001/health" 200; then
-        # Check if metrics are available
-        if check_metrics "Biometric Auth" "http://localhost:3001/metrics"; then
-            print_success "Biometric authentication service is fully operational"
-            return 0
-        else
-            print_warning "Biometric authentication service is running but metrics may not be available"
-            return 1
-        fi
-    else
-        print_error "Biometric authentication service is not responding"
-        return 1
-    fi
-}
-
-# Function to check blockchain exporters
-check_blockchain_exporters() {
-    print_status "Checking blockchain exporters..."
-    
-    local exporters=(
-        "ethereum-exporter:9091"
-        "polygon-exporter:9092"
+    local containers=(
+        "prometheus"
+        "grafana"
+        "loki"
+        "redis"
+        "biometric-auth"
+        "node-exporter"
+        "cadvisor"
+        "alertmanager"
     )
     
-    local all_healthy=true
+    local unhealthy_containers=()
     
-    for exporter in "${exporters[@]}"; do
-        local name=$(echo $exporter | cut -d: -f1)
-        local port=$(echo $exporter | cut -d: -f2)
-        
-        if check_service "$name" "http://localhost:$port/metrics" 200; then
-            print_success "$name is healthy"
+    for container in "${containers[@]}"; do
+        if docker ps --filter "name=$container" --filter "status=running" | grep -q "$container"; then
+            print_success "$container is running"
         else
-            print_warning "$name may not be configured or running"
-            all_healthy=false
+            print_error "$container is not running"
+            unhealthy_containers+=("$container")
         fi
     done
     
-    if [ "$all_healthy" = true ]; then
-        print_success "All blockchain exporters are healthy"
-        return 0
+    if [ ${#unhealthy_containers[@]} -gt 0 ]; then
+        print_error "Unhealthy containers: ${unhealthy_containers[*]}"
+        return 1
+    fi
+    
+    return 0
+}
+
+# Function to check service endpoints
+check_endpoints() {
+    print_status "Checking service endpoints..."
+    
+    local services=(
+        "Prometheus:http://localhost:9090/-/healthy:200"
+        "Grafana:http://localhost:3000/api/health:200"
+        "Loki:http://localhost:3100/ready:200"
+        "Redis:redis://localhost:6379:0"
+        "Biometric Auth:http://localhost:3001/health:200"
+        "Node Exporter:http://localhost:9100/metrics:200"
+        "cAdvisor:http://localhost:8080/healthz:200"
+        "Alertmanager:http://localhost:9093/-/healthy:200"
+    )
+    
+    local failed_services=()
+    
+    for service in "${services[@]}"; do
+        IFS=':' read -r name url expected_status <<< "$service"
+        
+        if ! check_service "$name" "$url" "$expected_status"; then
+            failed_services+=("$name")
+        fi
+    done
+    
+    if [ ${#failed_services[@]} -gt 0 ]; then
+        print_error "Failed services: ${failed_services[*]}"
+        return 1
+    fi
+    
+    return 0
+}
+
+# Function to check metrics collection
+check_metrics() {
+    print_status "Checking metrics collection..."
+    
+    # Check Prometheus targets
+    local targets_url="http://localhost:9090/api/v1/targets"
+    local targets_response=$(curl -s "$targets_url")
+    
+    if echo "$targets_response" | grep -q '"health":"up"'; then
+        print_success "Prometheus targets are healthy"
     else
-        print_warning "Some blockchain exporters may not be configured"
+        print_warning "Some Prometheus targets may be unhealthy"
+    fi
+    
+    # Check if metrics are being collected
+    local metrics_url="http://localhost:9090/api/v1/query?query=up"
+    local metrics_response=$(curl -s "$metrics_url")
+    
+    if echo "$metrics_response" | grep -q '"result"'; then
+        print_success "Metrics are being collected"
+    else
+        print_warning "No metrics data found"
+    fi
+}
+
+# Function to check logs
+check_logs() {
+    print_status "Checking service logs for errors..."
+    
+    local services=(
+        "prometheus"
+        "grafana"
+        "loki"
+        "redis"
+        "biometric-auth"
+        "node-exporter"
+        "cadvisor"
+        "alertmanager"
+    )
+    
+    local error_services=()
+    
+    for service in "${services[@]}"; do
+        if docker logs "$service" 2>&1 | grep -i "error\|fatal\|panic" | head -1 | grep -q .; then
+            print_warning "$service has errors in logs"
+            error_services+=("$service")
+        else
+            print_success "$service logs look clean"
+        fi
+    done
+    
+    if [ ${#error_services[@]} -gt 0 ]; then
+        print_warning "Services with errors: ${error_services[*]}"
+    fi
+}
+
+# Function to check disk space
+check_disk_space() {
+    print_status "Checking disk space..."
+    
+    local usage=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
+    
+    if [ "$usage" -lt 80 ]; then
+        print_success "Disk usage is ${usage}% (healthy)"
+    elif [ "$usage" -lt 90 ]; then
+        print_warning "Disk usage is ${usage}% (warning)"
+    else
+        print_error "Disk usage is ${usage}% (critical)"
         return 1
     fi
 }
 
-# Function to check system resources
-check_system_resources() {
-    print_status "Checking system resources..."
+# Function to check memory usage
+check_memory() {
+    print_status "Checking memory usage..."
     
-    # Check CPU usage
-    local cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | awk -F'%' '{print $1}')
-    if (( $(echo "$cpu_usage < 80" | bc -l) )); then
-        print_success "CPU usage is normal: ${cpu_usage}%"
-    else
-        print_warning "CPU usage is high: ${cpu_usage}%"
-    fi
+    local memory_usage=$(free | awk 'NR==2{printf "%.0f", $3*100/$2}')
     
-    # Check memory usage
-    local memory_usage=$(free | grep Mem | awk '{printf "%.2f", $3/$2 * 100.0}')
-    if (( $(echo "$memory_usage < 80" | bc -l) )); then
-        print_success "Memory usage is normal: ${memory_usage}%"
+    if [ "$memory_usage" -lt 80 ]; then
+        print_success "Memory usage is ${memory_usage}% (healthy)"
+    elif [ "$memory_usage" -lt 90 ]; then
+        print_warning "Memory usage is ${memory_usage}% (warning)"
     else
-        print_warning "Memory usage is high: ${memory_usage}%"
-    fi
-    
-    # Check disk usage
-    local disk_usage=$(df -h / | awk 'NR==2{print $5}' | sed 's/%//')
-    if [ "$disk_usage" -lt 80 ]; then
-        print_success "Disk usage is normal: ${disk_usage}%"
-    else
-        print_warning "Disk usage is high: ${disk_usage}%"
+        print_error "Memory usage is ${memory_usage}% (critical)"
+        return 1
     fi
 }
 
-# Function to display service status
-display_status() {
-    print_status "Service Status Summary:"
-    echo
+# Function to generate health report
+generate_report() {
+    local report_file="health-report-$(date +%Y%m%d-%H%M%S).txt"
     
-    # Core services
-    echo "📊 Core Services:"
-    check_container "prometheus" && echo "  ✅ Prometheus"
-    check_container "grafana" && echo "  ✅ Grafana"
-    check_container "loki" && echo "  ✅ Loki"
-    check_container "redis" && echo "  ✅ Redis"
-    check_container "alertmanager" && echo "  ✅ Alertmanager"
-    echo
+    print_status "Generating health report: $report_file"
     
-    # Biometric authentication
-    echo "🔐 Biometric Authentication:"
-    check_container "biometric-auth" && echo "  ✅ Biometric Auth Service"
-    echo
-    
-    # Exporters
-    echo "📈 Exporters:"
-    check_container "node-exporter" && echo "  ✅ Node Exporter"
-    check_container "cadvisor" && echo "  ✅ cAdvisor"
-    check_container "ethereum-exporter" && echo "  ✅ Ethereum Exporter"
-    check_container "polygon-exporter" && echo "  ✅ Polygon Exporter"
-    echo
-    
-    # Logging
-    echo "📝 Logging:"
-    check_container "fluentd" && echo "  ✅ Fluentd"
-    echo
-}
-
-# Function to run comprehensive health check
-run_health_check() {
-    echo "🔍 Sec-Observe-Lab Health Check"
-    echo "==============================="
-    echo
-    
-    local overall_status=0
-    
-    # Check Docker containers
-    print_status "Checking Docker containers..."
-    display_status
-    
-    # Check service endpoints
-    print_status "Checking service endpoints..."
-    
-    # Core services
-    check_service "Prometheus" "http://localhost:9090" 200 || overall_status=1
-    check_service "Grafana" "http://localhost:3000" 200 || overall_status=1
-    check_service "Loki" "http://localhost:3100" 200 || overall_status=1
-    check_service "Redis" "http://localhost:6379" 200 || overall_status=1
-    check_service "Alertmanager" "http://localhost:9093" 200 || overall_status=1
-    
-    # Biometric authentication
-    check_biometric_auth || overall_status=1
-    
-    # Blockchain exporters
-    check_blockchain_exporters || overall_status=1
-    
-    # System resources
-    check_system_resources
-    
-    echo
-    if [ $overall_status -eq 0 ]; then
-        print_success "All services are healthy! 🎉"
-    else
-        print_warning "Some services may have issues. Check the logs for more details."
+    {
+        echo "Sec-Observe-Lab Health Report"
+        echo "Generated: $(date)"
+        echo "=================================="
         echo
-        print_status "To view logs, run:"
-        echo "  docker-compose logs -f"
-        echo "  docker-compose logs -f [service-name]"
+        
+        echo "Docker Containers:"
+        docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+        echo
+        
+        echo "Service Endpoints:"
+        for service in "Prometheus:http://localhost:9090" "Grafana:http://localhost:3000" "Loki:http://localhost:3100" "Biometric Auth:http://localhost:3001"; do
+            IFS=':' read -r name url <<< "$service"
+            echo -n "$name: "
+            if curl -s -o /dev/null -w "%{http_code}" "$url" | grep -q "200"; then
+                echo "HEALTHY"
+            else
+                echo "UNHEALTHY"
+            fi
+        done
+        echo
+        
+        echo "System Resources:"
+        echo "CPU Usage: $(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)%"
+        echo "Memory Usage: $(free | awk 'NR==2{printf "%.1f%%", $3*100/$2}')"
+        echo "Disk Usage: $(df / | awk 'NR==2 {print $5}')"
+        echo
+        
+        echo "Recent Logs (last 10 lines):"
+        docker-compose logs --tail=10
+    } > "$report_file"
+    
+    print_success "Health report saved to $report_file"
+}
+
+# Main health check function
+main() {
+    echo "🔍 Sec-Observe-Lab Health Check"
+    echo "================================"
+    echo
+    
+    local exit_code=0
+    
+    # Run all health checks
+    check_containers || exit_code=1
+    echo
+    
+    check_endpoints || exit_code=1
+    echo
+    
+    check_metrics
+    echo
+    
+    check_logs
+    echo
+    
+    check_disk_space || exit_code=1
+    echo
+    
+    check_memory || exit_code=1
+    echo
+    
+    # Generate report
+    generate_report
+    echo
+    
+    # Final status
+    if [ $exit_code -eq 0 ]; then
+        print_success "All health checks passed! 🎉"
+    else
+        print_error "Some health checks failed! ⚠️"
     fi
     
-    return $overall_status
-}
-
-# Function to show service URLs
-show_urls() {
-    echo "🌐 Service URLs:"
-    echo "==============="
-    echo
-    echo "📊 Monitoring:"
-    echo "  • Grafana: http://localhost:3000 (admin/admin123)"
-    echo "  • Prometheus: http://localhost:9090"
-    echo "  • Loki: http://localhost:3100"
-    echo "  • Alertmanager: http://localhost:9093"
-    echo
-    echo "🔐 Biometric Auth:"
-    echo "  • API: http://localhost:3001"
-    echo "  • Health: http://localhost:3001/health"
-    echo "  • Metrics: http://localhost:3001/metrics"
-    echo
-    echo "📈 Exporters:"
-    echo "  • Node Exporter: http://localhost:9100"
-    echo "  • cAdvisor: http://localhost:8080"
-    echo "  • Ethereum Exporter: http://localhost:9091"
-    echo "  • Polygon Exporter: http://localhost:9092"
-    echo
-}
-
-# Main execution
-main() {
-    case "${1:-health}" in
-        "health")
-            run_health_check
-            ;;
-        "urls")
-            show_urls
-            ;;
-        "containers")
-            display_status
-            ;;
-        "metrics")
-            print_status "Checking metrics endpoints..."
-            check_metrics "Prometheus" "http://localhost:9090/metrics"
-            check_metrics "Grafana" "http://localhost:3000/metrics"
-            check_metrics "Biometric Auth" "http://localhost:3001/metrics"
-            ;;
-        *)
-            echo "Usage: $0 [health|urls|containers|metrics]"
-            echo
-            echo "Commands:"
-            echo "  health     - Run comprehensive health check (default)"
-            echo "  urls       - Show service URLs"
-            echo "  containers - Show container status"
-            echo "  metrics    - Check metrics endpoints"
-            exit 1
-            ;;
-    esac
+    exit $exit_code
 }
 
 # Run main function

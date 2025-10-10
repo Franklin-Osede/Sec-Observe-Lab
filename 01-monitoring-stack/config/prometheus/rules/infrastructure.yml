@@ -61,7 +61,7 @@ groups:
           service: container
         annotations:
           summary: "Container high memory usage"
-          description: "Container {{ $labels.name }} memory usage is {{ $value | humanizePercentage }}"
+          description: "Container {{ $labels.name }} memory usage is {{ $value }}"
 
       # Service Health
       - alert: PrometheusDown
@@ -113,7 +113,7 @@ groups:
           service: network
         annotations:
           summary: "High network traffic"
-          description: "Network traffic is {{ $value | humanizeBytes }}/s on {{ $labels.instance }}"
+          description: "Network traffic is {{ $value }}/s on {{ $labels.instance }}"
 
       - alert: NetworkInterfaceDown
         expr: node_network_up == 0

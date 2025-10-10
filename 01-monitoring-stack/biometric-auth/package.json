@@ -32,13 +32,10 @@
     "bcryptjs": "^2.4.3",
     "redis": "^4.6.7",
     "prom-client": "^14.2.0",
-    "webauthn": "^4.0.0",
     "qrcode": "^1.5.3",
-    "canvas": "^2.11.2",
-    "face-api.js": "^0.22.2",
-    "fingerprintjs2": "^2.2.0",
     "ws": "^8.13.0",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "js-yaml": "^4.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1",

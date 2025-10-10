@@ -1,0 +1,750 @@
+openapi: 3.1.0
+info:
+  title: Sec-Observe-Lab Biometric Authentication API
+  description: |
+    API de autenticación biométrica avanzada para el stack de monitoreo Sec-Observe-Lab.
+    
+    Esta API proporciona múltiples métodos de autenticación biométrica:
+    - WebAuthn (FIDO2)
+    - Reconocimiento de huellas dactilares
+    - Reconocimiento facial
+    - Códigos QR dinámicos
+    
+    ## Características de Seguridad
+    - Rate limiting por IP
+    - Validación de entrada robusta
+    - Métricas de Prometheus integradas
+    - Logging de auditoría completo
+    
+  version: 1.0.0
+  contact:
+    name: Sec-Observe-Lab Team
+    email: support@sec-observe-lab.com
+    url: https://github.com/Franklin-Osede/sec-observe-lab
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: https://sec-observe-lab.com/terms
+
+servers:
+  - url: http://localhost:3001
+    description: Servidor de desarrollo local
+  - url: https://api.sec-observe-lab.com/v1
+    description: Servidor de producción
+
+tags:
+  - name: health
+    description: Endpoints de salud del servicio
+  - name: webauthn
+    description: Autenticación WebAuthn (FIDO2)
+  - name: fingerprint
+    description: Reconocimiento de huellas dactilares
+  - name: face
+    description: Reconocimiento facial
+  - name: qr
+    description: Códigos QR dinámicos
+  - name: metrics
+    description: Métricas de Prometheus
+
+paths:
+  /health:
+    get:
+      tags:
+        - health
+      summary: Health Check
+      description: Verifica el estado de salud del servicio
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Servicio saludable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2024-01-15T10:30:00Z"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /metrics:
+    get:
+      tags:
+        - metrics
+      summary: Métricas de Prometheus
+      description: Retorna métricas en formato Prometheus
+      operationId: getMetrics
+      responses:
+        '200':
+          description: Métricas en formato Prometheus
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: |
+                  # HELP biometric_auth_attempts_total Total number of biometric authentication attempts
+                  # TYPE biometric_auth_attempts_total counter
+                  biometric_auth_attempts_total{method="webauthn",result="success"} 150
+
+  /api/v1/webauthn/register/begin:
+    post:
+      tags:
+        - webauthn
+      summary: Iniciar registro WebAuthn
+      description: Inicia el proceso de registro de credenciales WebAuthn
+      operationId: beginWebAuthnRegistration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebAuthnRegistrationRequest'
+      responses:
+        '200':
+          description: Opciones de registro generadas exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebAuthnRegistrationOptions'
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/webauthn/register/complete:
+    post:
+      tags:
+        - webauthn
+      summary: Completar registro WebAuthn
+      description: Completa el proceso de registro de credenciales WebAuthn
+      operationId: completeWebAuthnRegistration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebAuthnRegistrationComplete'
+      responses:
+        '200':
+          description: Registro completado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebAuthnRegistrationResponse'
+        '400':
+          description: Verificación fallida o datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/webauthn/authenticate/begin:
+    post:
+      tags:
+        - webauthn
+      summary: Iniciar autenticación WebAuthn
+      description: Inicia el proceso de autenticación WebAuthn
+      operationId: beginWebAuthnAuthentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebAuthnAuthenticationRequest'
+      responses:
+        '200':
+          description: Opciones de autenticación generadas exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebAuthnAuthenticationOptions'
+        '404':
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/webauthn/authenticate/complete:
+    post:
+      tags:
+        - webauthn
+      summary: Completar autenticación WebAuthn
+      description: Completa el proceso de autenticación WebAuthn
+      operationId: completeWebAuthnAuthentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebAuthnAuthenticationComplete'
+      responses:
+        '200':
+          description: Autenticación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebAuthnAuthenticationResponse'
+        '400':
+          description: Autenticación fallida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/fingerprint/recognize:
+    post:
+      tags:
+        - fingerprint
+      summary: Reconocimiento de huella dactilar
+      description: Procesa y valida datos de huella dactilar
+      operationId: recognizeFingerprint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FingerprintRequest'
+      responses:
+        '200':
+          description: Reconocimiento exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FingerprintResponse'
+        '400':
+          description: Reconocimiento fallido o datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/face/recognize:
+    post:
+      tags:
+        - face
+      summary: Reconocimiento facial
+      description: Procesa y valida datos de reconocimiento facial
+      operationId: recognizeFace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FaceRequest'
+      responses:
+        '200':
+          description: Reconocimiento exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FaceResponse'
+        '400':
+          description: Reconocimiento fallido o datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/qr/generate:
+    post:
+      tags:
+        - qr
+      summary: Generar código QR
+      description: Genera un código QR dinámico para autenticación
+      operationId: generateQRCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QRGenerationRequest'
+      responses:
+        '200':
+          description: Código QR generado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QRGenerationResponse'
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/qr/validate:
+    post:
+      tags:
+        - qr
+      summary: Validar código QR
+      description: Valida un código QR generado previamente
+      operationId: validateQRCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QRValidationRequest'
+      responses:
+        '200':
+          description: Código QR validado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QRValidationResponse'
+        '400':
+          description: Código QR inválido o expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    WebAuthnRegistrationRequest:
+      type: object
+      required:
+        - username
+        - displayName
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          description: Nombre de usuario único
+          example: "john_doe"
+        displayName:
+          type: string
+          minLength: 3
+          maxLength: 50
+          description: Nombre para mostrar
+          example: "John Doe"
+
+    WebAuthnRegistrationOptions:
+      type: object
+      properties:
+        challenge:
+          type: string
+          description: Challenge para la verificación
+          example: "base64-encoded-challenge"
+        rp:
+          type: object
+          properties:
+            name:
+              type: string
+              example: "Sec-Observe-Lab"
+            id:
+              type: string
+              example: "localhost"
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "john_doe"
+            name:
+              type: string
+              example: "john_doe"
+            displayName:
+              type: string
+              example: "John Doe"
+        pubKeyCredParams:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                example: "public-key"
+              alg:
+                type: integer
+                example: -7
+        authenticatorSelection:
+          type: object
+          properties:
+            authenticatorAttachment:
+              type: string
+              example: "platform"
+            userVerification:
+              type: string
+              example: "required"
+        timeout:
+          type: integer
+          example: 60000
+        attestation:
+          type: string
+          example: "direct"
+
+    WebAuthnRegistrationComplete:
+      type: object
+      required:
+        - username
+        - credential
+      properties:
+        username:
+          type: string
+          example: "john_doe"
+        credential:
+          type: object
+          description: Credencial WebAuthn del cliente
+          properties:
+            id:
+              type: string
+              example: "credential-id"
+            rawId:
+              type: string
+              example: "raw-credential-id"
+            response:
+              type: object
+              properties:
+                attestationObject:
+                  type: string
+                  example: "attestation-object"
+                clientDataJSON:
+                  type: string
+                  example: "client-data-json"
+            type:
+              type: string
+              example: "public-key"
+
+    WebAuthnRegistrationResponse:
+      type: object
+      properties:
+        verified:
+          type: boolean
+          example: true
+
+    WebAuthnAuthenticationRequest:
+      type: object
+      required:
+        - username
+      properties:
+        username:
+          type: string
+          example: "john_doe"
+
+    WebAuthnAuthenticationOptions:
+      type: object
+      properties:
+        challenge:
+          type: string
+          example: "base64-encoded-challenge"
+        timeout:
+          type: integer
+          example: 60000
+        rpId:
+          type: string
+          example: "localhost"
+        allowCredentials:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                example: "public-key"
+              id:
+                type: string
+                example: "credential-id"
+        userVerification:
+          type: string
+          example: "required"
+
+    WebAuthnAuthenticationComplete:
+      type: object
+      required:
+        - username
+        - credential
+      properties:
+        username:
+          type: string
+          example: "john_doe"
+        credential:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "credential-id"
+            rawId:
+              type: string
+              example: "raw-credential-id"
+            response:
+              type: object
+              properties:
+                authenticatorData:
+                  type: string
+                  example: "authenticator-data"
+                clientDataJSON:
+                  type: string
+                  example: "client-data-json"
+                signature:
+                  type: string
+                  example: "signature"
+            type:
+              type: string
+              example: "public-key"
+
+    WebAuthnAuthenticationResponse:
+      type: object
+      properties:
+        verified:
+          type: boolean
+          example: true
+        token:
+          type: string
+          description: JWT token para autenticación
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    FingerprintRequest:
+      type: object
+      required:
+        - fingerprintData
+        - username
+      properties:
+        fingerprintData:
+          type: string
+          minLength: 100
+          description: Datos de huella dactilar encriptados
+          example: "encrypted_fingerprint_data_123456789"
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          example: "john_doe"
+
+    FingerprintResponse:
+      type: object
+      properties:
+        verified:
+          type: boolean
+          example: true
+        token:
+          type: string
+          description: JWT token para autenticación
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        similarity:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Nivel de similitud de la huella (0-1)
+          example: 0.95
+
+    FaceRequest:
+      type: object
+      required:
+        - faceData
+        - username
+      properties:
+        faceData:
+          type: string
+          minLength: 100
+          description: Datos faciales encriptados
+          example: "encrypted_face_data_123456789"
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          example: "john_doe"
+
+    FaceResponse:
+      type: object
+      properties:
+        verified:
+          type: boolean
+          example: true
+        token:
+          type: string
+          description: JWT token para autenticación
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        similarity:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Nivel de similitud facial (0-1)
+          example: 0.92
+
+    QRGenerationRequest:
+      type: object
+      required:
+        - username
+        - data
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          example: "john_doe"
+        data:
+          type: object
+          description: Datos a incluir en el QR
+          example:
+            action: "login"
+            timestamp: "2024-01-15T10:30:00Z"
+
+    QRGenerationResponse:
+      type: object
+      properties:
+        qrCode:
+          type: string
+          format: data-url
+          description: Código QR en formato data URL
+          example: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+        challenge:
+          type: string
+          description: Challenge único para validación
+          example: "abc123"
+
+    QRValidationRequest:
+      type: object
+      required:
+        - username
+        - challenge
+      properties:
+        username:
+          type: string
+          example: "john_doe"
+        challenge:
+          type: string
+          minLength: 7
+          maxLength: 7
+          example: "abc123"
+
+    QRValidationResponse:
+      type: object
+      properties:
+        verified:
+          type: boolean
+          example: true
+        token:
+          type: string
+          description: JWT token para autenticación
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Mensaje de error
+          example: "Authentication failed"
+        code:
+          type: string
+          description: Código de error
+          example: "AUTH_FAILED"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    ValidationError:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: "username"
+              message:
+                type: string
+                example: "Username must be at least 3 characters long"
+              value:
+                type: string
+                example: "a"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtenido después de autenticación exitosa
+
+security:
+  - BearerAuth: []
+
+# Rate limiting information
+x-rate-limit:
+  windowMs: 900000  # 15 minutes
+  max: 100  # requests per window
+  message: "Too many requests from this IP, please try again later."
+
+# API versioning
+x-api-version: "1.0.0"
+x-deprecated: false
+x-sunset: null
