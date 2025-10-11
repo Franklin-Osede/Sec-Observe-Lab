@@ -1,0 +1,1 @@
+{"ast":null,"code":"// Barrel exports para servicios\nexport * from './biometric.service';\nexport * from './metrics.service';","map":null,"metadata":{},"sourceType":"module","externalDependencies":[]}

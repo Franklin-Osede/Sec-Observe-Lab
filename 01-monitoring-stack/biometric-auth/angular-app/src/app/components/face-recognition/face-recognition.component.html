@@ -1,0 +1,44 @@
+<div class="face-container">
+  <mat-card class="face-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>face</mat-icon>
+        Reconocimiento Facial
+      </mat-card-title>
+      <mat-card-subtitle>
+        Reconocimiento facial con cámara
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- Status Display -->
+      <div class="status-section" *ngIf="currentStatus">
+        <div class="status-item" [class.success]="currentStatus.success" [class.error]="!currentStatus.success">
+          <mat-icon>{{ currentStatus.success ? 'check_circle' : 'error' }}</mat-icon>
+          <span>{{ currentStatus.method }}: {{ currentStatus.success ? 'Exitoso' : 'Falló' }}</span>
+        </div>
+      </div>
+
+      <!-- Face Recognition Test -->
+      <div class="test-section">
+        <h3>📷 Prueba de Reconocimiento Facial</h3>
+        <p>Simula reconocimiento facial con cámara</p>
+
+        <button 
+          mat-raised-button 
+          color="primary" 
+          (click)="testFaceRecognition()"
+          [disabled]="isLoading">
+          <mat-icon>face</mat-icon>
+          Probar Rostro
+        </button>
+      </div>
+
+      <!-- Loading Spinner -->
+      <div class="loading-section" *ngIf="isLoading">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Procesando rostro...</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

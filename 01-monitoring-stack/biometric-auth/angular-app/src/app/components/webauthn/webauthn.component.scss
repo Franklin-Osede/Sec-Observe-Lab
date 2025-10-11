@@ -1,0 +1,119 @@
+.webauthn-container {
+  padding: 1rem;
+}
+
+.webauthn-card {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.status-section {
+  margin: 1rem 0;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: #f5f5f5;
+  margin: 10px 0;
+}
+
+.status-item.success {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-item.error {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.support-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 10px;
+  margin: 1rem 0;
+}
+
+.registration-section,
+.authentication-section {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  border: 2px solid #f0f0f0;
+  border-radius: 15px;
+  transition: var(--transition);
+}
+
+.registration-section:hover,
+.authentication-section:hover {
+  border-color: var(--primary-color);
+}
+
+.input-group {
+  margin: 1rem 0;
+}
+
+.user-input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  font-size: 1em;
+  transition: var(--transition);
+}
+
+.user-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.biometric-info {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 15px;
+}
+
+.support-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.support-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 1rem;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  transition: var(--transition);
+}
+
+.support-item.supported {
+  border-color: var(--success-color);
+  background: #d4edda;
+}
+
+.loading-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+@media (max-width: 768px) {
+  .support-grid {
+    grid-template-columns: 1fr;
+  }
+}

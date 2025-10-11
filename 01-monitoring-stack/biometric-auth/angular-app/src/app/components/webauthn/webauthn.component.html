@@ -1,0 +1,110 @@
+<div class="webauthn-container">
+  <mat-card class="webauthn-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>security</mat-icon>
+        WebAuthn - Autenticación Biométrica
+      </mat-card-title>
+      <mat-card-subtitle>
+        Usa tu huella dactilar, Face ID o llave de seguridad
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- Status Display -->
+      <div class="status-section" *ngIf="currentStatus">
+        <div class="status-item" [class.success]="currentStatus.success" [class.error]="!currentStatus.success">
+          <mat-icon>{{ currentStatus.success ? 'check_circle' : 'error' }}</mat-icon>
+          <span>{{ currentStatus.method }}: {{ currentStatus.success ? 'Exitoso' : 'Falló' }}</span>
+        </div>
+      </div>
+
+      <!-- WebAuthn Support Check -->
+      <div class="support-check" *ngIf="!isWebAuthnSupported">
+        <mat-icon color="warn">warning</mat-icon>
+        <p>WebAuthn no está soportado en este navegador</p>
+      </div>
+
+      <!-- Registration Section -->
+      <div class="registration-section">
+        <h3>🔑 Registro WebAuthn</h3>
+        <p>Registra tu dispositivo para autenticación biométrica</p>
+        
+        <div class="input-group">
+          <input 
+            type="text" 
+            [(ngModel)]="registrationData.displayName" 
+            placeholder="Nombre para mostrar"
+            class="user-input">
+        </div>
+
+        <button 
+          mat-raised-button 
+          color="primary" 
+          (click)="beginRegistration()"
+          [disabled]="isLoading || !isWebAuthnSupported">
+          <mat-icon>person_add</mat-icon>
+          Iniciar Registro
+        </button>
+
+        <button 
+          mat-raised-button 
+          color="accent" 
+          (click)="completeRegistration()"
+          [disabled]="isLoading || !registrationChallenge">
+          <mat-icon>check</mat-icon>
+          Completar Registro
+        </button>
+      </div>
+
+      <!-- Authentication Section -->
+      <div class="authentication-section">
+        <h3>🔐 Autenticación WebAuthn</h3>
+        <p>Autentica usando tu dispositivo registrado</p>
+
+        <button 
+          mat-raised-button 
+          color="primary" 
+          (click)="beginAuthentication()"
+          [disabled]="isLoading || !isWebAuthnSupported">
+          <mat-icon>fingerprint</mat-icon>
+          Iniciar Autenticación
+        </button>
+
+        <button 
+          mat-raised-button 
+          color="accent" 
+          (click)="completeAuthentication()"
+          [disabled]="isLoading || !authenticationChallenge">
+          <mat-icon>verified</mat-icon>
+          Completar Autenticación
+        </button>
+      </div>
+
+      <!-- Biometric Support Info -->
+      <div class="biometric-info">
+        <h4>📱 Métodos Soportados:</h4>
+        <div class="support-grid">
+          <div class="support-item" [class.supported]="biometricSupport.fingerprint">
+            <mat-icon>fingerprint</mat-icon>
+            <span>Huella Dactilar</span>
+          </div>
+          <div class="support-item" [class.supported]="biometricSupport.face">
+            <mat-icon>face</mat-icon>
+            <span>Reconocimiento Facial</span>
+          </div>
+          <div class="support-item" [class.supported]="biometricSupport.webauthn">
+            <mat-icon>security</mat-icon>
+            <span>WebAuthn</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading Spinner -->
+      <div class="loading-section" *ngIf="isLoading">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Procesando...</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

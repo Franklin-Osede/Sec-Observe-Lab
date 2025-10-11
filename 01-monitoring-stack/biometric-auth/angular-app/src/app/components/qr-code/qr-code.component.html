@@ -1,0 +1,59 @@
+<div class="qr-container">
+  <mat-card class="qr-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>qr_code</mat-icon>
+        Código QR
+      </mat-card-title>
+      <mat-card-subtitle>
+        Genera y valida códigos QR para autenticación
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- Status Display -->
+      <div class="status-section" *ngIf="currentStatus">
+        <div class="status-item" [class.success]="currentStatus.success" [class.error]="!currentStatus.success">
+          <mat-icon>{{ currentStatus.success ? 'check_circle' : 'error' }}</mat-icon>
+          <span>{{ currentStatus.method }}: {{ currentStatus.success ? 'Exitoso' : 'Falló' }}</span>
+        </div>
+      </div>
+
+      <!-- QR Generation -->
+      <div class="test-section">
+        <h3>📱 Generar Código QR</h3>
+        <p>Genera un código QR para autenticación</p>
+
+        <button 
+          mat-raised-button 
+          color="primary" 
+          (click)="generateQR()"
+          [disabled]="isLoading">
+          <mat-icon>qr_code</mat-icon>
+          Generar QR
+        </button>
+      </div>
+
+      <!-- QR Display -->
+      <div class="qr-display" *ngIf="qrCodeUrl">
+        <h4>📱 Código QR Generado:</h4>
+        <img [src]="qrCodeUrl" alt="QR Code" class="qr-image">
+        
+        <button 
+          mat-raised-button 
+          color="accent" 
+          (click)="validateQR()"
+          [disabled]="isLoading">
+          <mat-icon>check_circle</mat-icon>
+          Validar QR
+        </button>
+      </div>
+
+      <!-- Loading Spinner -->
+      <div class="loading-section" *ngIf="isLoading">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Procesando QR...</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>
