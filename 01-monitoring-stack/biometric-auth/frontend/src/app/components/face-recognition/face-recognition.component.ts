@@ -40,6 +40,7 @@ export class FaceRecognitionComponent implements OnInit {
     if (this.username) {
       console.log('Face recognition component initialized for:', this.username);
     }
+    console.log('🔄 AUTO-RELOAD TEST - Face Recognition component loaded!');
   }
 
   async testFaceRecognition() {

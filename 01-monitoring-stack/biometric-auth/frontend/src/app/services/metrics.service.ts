@@ -30,8 +30,15 @@ export class MetricsService {
 
   async getMetrics(): Promise<MetricsData> {
     try {
-      const response = await this.http.get(`${this.API_BASE}/metrics`).toPromise() as string;
-      return this.parseMetrics(response);
+      const response = await this.http.get(`${this.API_BASE}/metrics`).toPromise();
+      
+      // Si la respuesta es un string, parsearlo como métricas Prometheus
+      if (typeof response === 'string') {
+        return this.parseMetrics(response);
+      }
+      
+      // Si la respuesta es un objeto, devolver métricas por defecto
+      return this.getDefaultMetrics();
     } catch (error: any) {
       console.error('Error obteniendo métricas:', error);
       return this.getDefaultMetrics();

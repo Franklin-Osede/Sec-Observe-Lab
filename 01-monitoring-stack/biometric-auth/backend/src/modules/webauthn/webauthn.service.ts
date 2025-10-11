@@ -19,7 +19,7 @@ export class WebauthnService {
   private readonly logger = new Logger(WebauthnService.name);
   private readonly rpName = 'Sec-Observe-Lab';
   private readonly rpID = 'localhost';
-  private readonly origin = 'http://localhost:4200';
+  private readonly origin = 'http://localhost:4202';
 
   constructor(@InjectRedis() private readonly redis: Redis) {}
 
@@ -42,9 +42,9 @@ export class WebauthnService {
         userDisplayName: displayName,
         attestationType: 'direct',
         authenticatorSelection: {
-          authenticatorAttachment: 'platform',
-          userVerification: 'preferred',
-          residentKey: 'preferred',
+          authenticatorAttachment: 'cross-platform',
+          userVerification: 'discouraged',
+          residentKey: 'discouraged',
         },
         supportedAlgorithmIDs: [-7, -257], // ES256, RS256
         timeout: 60000,
@@ -52,7 +52,7 @@ export class WebauthnService {
 
       const registrationOptions = await generateRegistrationOptions(options);
 
-      // Guardar challenge en Redis
+      // Guardar challenge en Redis (sin recodificar)
       await this.redis.setex(
         `webauthn:challenge:${username}`,
         300, // 5 minutos
@@ -75,6 +75,7 @@ export class WebauthnService {
 
       return {
         ...registrationOptions,
+        challenge: registrationOptions.challenge,
         user: {
           id: username,
           name: username,
@@ -98,6 +99,9 @@ export class WebauthnService {
         throw new BadRequestException('Challenge no encontrado o expirado');
       }
 
+      // Usar challenge directamente como string
+      const challengeString = challenge;
+
       // Verificar respuesta de registro
       const verification = await verifyRegistrationResponse({
         response: {
@@ -110,7 +114,7 @@ export class WebauthnService {
           },
           clientExtensionResults: {},
         },
-        expectedChallenge: challenge,
+        expectedChallenge: challengeString,
         expectedOrigin: this.origin,
         expectedRPID: this.rpID,
       });
@@ -147,6 +151,10 @@ export class WebauthnService {
       await this.redis.del(`webauthn:challenge:${credential.userID}`);
 
       this.logger.log(`Registro WebAuthn completado para usuario: ${credential.userID}`);
+
+      // Incrementar métricas
+      await this.redis.incr('webauthn_registration_total');
+      await this.redis.incr('biometric_auth_attempts_total');
 
       return {
         success: true,
@@ -194,7 +202,7 @@ export class WebauthnService {
       const options: GenerateAuthenticationOptionsOpts = {
         rpID: this.rpID,
         allowCredentials: userCredentials,
-        userVerification: 'preferred',
+        userVerification: 'discouraged',
         timeout: 60000,
       };
 

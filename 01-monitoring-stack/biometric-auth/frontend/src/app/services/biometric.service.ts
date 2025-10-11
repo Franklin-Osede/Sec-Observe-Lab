@@ -79,10 +79,13 @@ export class BiometricService {
     }
   }
 
-  async completeWebAuthnRegistration(credential: WebAuthnCredential): Promise<BiometricResult> {
+  async completeWebAuthnRegistration(credential: WebAuthnCredential, username?: string): Promise<BiometricResult> {
     try {
       const response = await this.http.post(`${this.API_BASE}/webauthn/register/complete`, {
-        credential
+        credential: {
+          ...credential,
+          userID: username || 'testuser'
+        }
       }, this.httpOptions).toPromise();
 
       const result: BiometricResult = {
@@ -295,9 +298,13 @@ export class BiometricService {
   // WebAuthn Browser API Integration
   async createWebAuthnCredential(challenge: string, user: any): Promise<WebAuthnCredential> {
     try {
+      console.log('Challenge recibido:', challenge);
+      console.log('Tipo de challenge:', typeof challenge);
+      console.log('Longitud del challenge:', challenge.length);
+      
       const credential = await navigator.credentials.create({
         publicKey: {
-          challenge: this.base64ToArrayBuffer(challenge),
+          challenge: this.base64urlToArrayBuffer(challenge),
           rp: {
             name: "Sec-Observe-Lab",
             id: "localhost"
@@ -323,10 +330,10 @@ export class BiometricService {
       return {
         id: credential.id,
         type: credential.type,
-        rawId: this.arrayBufferToBase64(credential.rawId),
+        rawId: this.arrayBufferToBase64URL(credential.rawId),
         response: {
-          attestationObject: this.arrayBufferToBase64((credential.response as AuthenticatorAttestationResponse).attestationObject),
-          clientDataJSON: this.arrayBufferToBase64(credential.response.clientDataJSON)
+          attestationObject: this.arrayBufferToBase64URL((credential.response as AuthenticatorAttestationResponse).attestationObject),
+          clientDataJSON: this.arrayBufferToBase64URL(credential.response.clientDataJSON)
         }
       };
     } catch (error: any) {
@@ -338,9 +345,9 @@ export class BiometricService {
     try {
       const assertion = await navigator.credentials.get({
         publicKey: {
-          challenge: this.base64ToArrayBuffer(challenge),
+          challenge: this.base64urlToArrayBuffer(challenge),
           allowCredentials: allowCredentials.map(cred => ({
-            id: this.base64ToArrayBuffer(cred.id),
+            id: this.base64urlToArrayBuffer(cred.id),
             type: "public-key",
             transports: ["internal", "usb", "nfc", "ble"]
           })),
@@ -352,12 +359,12 @@ export class BiometricService {
       return {
         id: assertion.id,
         type: assertion.type,
-        rawId: this.arrayBufferToBase64(assertion.rawId),
+        rawId: this.arrayBufferToBase64URL(assertion.rawId),
         response: {
-          authenticatorData: this.arrayBufferToBase64((assertion.response as AuthenticatorAssertionResponse).authenticatorData),
-          clientDataJSON: this.arrayBufferToBase64(assertion.response.clientDataJSON),
-          signature: this.arrayBufferToBase64((assertion.response as AuthenticatorAssertionResponse).signature),
-          userHandle: this.arrayBufferToBase64((assertion.response as AuthenticatorAssertionResponse).userHandle || new ArrayBuffer(0))
+          authenticatorData: this.arrayBufferToBase64URL((assertion.response as AuthenticatorAssertionResponse).authenticatorData),
+          clientDataJSON: this.arrayBufferToBase64URL(assertion.response.clientDataJSON),
+          signature: this.arrayBufferToBase64URL((assertion.response as AuthenticatorAssertionResponse).signature),
+          userHandle: this.arrayBufferToBase64URL((assertion.response as AuthenticatorAssertionResponse).userHandle || new ArrayBuffer(0))
         }
       };
     } catch (error: any) {
@@ -367,12 +374,35 @@ export class BiometricService {
 
   // Utility Methods
   private base64ToArrayBuffer(base64: string): ArrayBuffer {
-    const binaryString = atob(base64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
+    try {
+      // Limpiar el string base64 de caracteres no válidos
+      const cleanBase64 = base64.replace(/[^A-Za-z0-9+/=]/g, '');
+      const binaryString = atob(cleanBase64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return bytes.buffer;
+    } catch (error: any) {
+      console.error('Error decodificando base64:', error);
+      console.error('Base64 recibido:', base64);
+      throw new Error(`Error decodificando challenge: ${error.message || error}`);
     }
-    return bytes.buffer;
+  }
+
+  // Helper to convert Base64URL to ArrayBuffer
+  private base64urlToArrayBuffer(base64url: string): ArrayBuffer {
+    try {
+      // Convert base64url to base64
+      const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+      // Add padding if needed
+      const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+      return this.base64ToArrayBuffer(padded);
+    } catch (error: any) {
+      console.error('Error decodificando base64url:', error);
+      console.error('Base64URL recibido:', base64url);
+      throw new Error(`Error decodificando challenge base64url: ${error.message || error}`);
+    }
   }
 
   private arrayBufferToBase64(buffer: ArrayBuffer): string {
@@ -382,6 +412,18 @@ export class BiometricService {
       binary += String.fromCharCode(bytes[i]);
     }
     return btoa(binary);
+  }
+
+  private arrayBufferToBase64URL(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary)
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
   }
 
   // Check WebAuthn Support

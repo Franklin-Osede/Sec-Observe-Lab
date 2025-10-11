@@ -26,6 +26,11 @@ export class FaceService {
       );
 
       this.logger.log(`Rostro reconocido para usuario: ${username}`);
+      
+      // Incrementar métricas
+      await this.redis.incr('face_recognition_total');
+      await this.redis.incr('biometric_auth_attempts_total');
+      
       return recognitionResult;
     } catch (error) {
       this.logger.error(`Error reconociendo rostro: ${error.message}`);

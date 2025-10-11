@@ -26,6 +26,11 @@ export class FingerprintService {
       );
 
       this.logger.log(`Huella dactilar reconocida para usuario: ${username}`);
+      
+      // Incrementar métricas
+      await this.redis.incr('fingerprint_recognition_total');
+      await this.redis.incr('biometric_auth_attempts_total');
+      
       return recognitionResult;
     } catch (error) {
       this.logger.error(`Error reconociendo huella dactilar: ${error.message}`);

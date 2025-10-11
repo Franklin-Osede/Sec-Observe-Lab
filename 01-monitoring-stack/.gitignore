@@ -99,3 +99,22 @@ health-report-*.txt
 
 # Docker volumes
 data/
+
+# Angular cache and build files
+biometric-auth/frontend/.angular/
+biometric-auth/frontend/dist/
+biometric-auth/frontend/node_modules/
+biometric-auth/frontend/package-lock.json
+
+# Angular webpack cache
+**/.angular/cache/
+**/angular-webpack/
+**/*.pack
+
+# Backend node_modules
+biometric-auth/backend/node_modules/
+biometric-auth/backend/package-lock.json
+
+# Large cache files
+*.cache
+.cache/

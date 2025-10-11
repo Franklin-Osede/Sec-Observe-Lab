@@ -91,15 +91,18 @@ export class WebauthnComponent implements OnInit {
       return;
     }
 
+    console.log('Registration Challenge completo:', this.registrationChallenge);
+    console.log('Challenge específico:', this.registrationChallenge.challenge);
+
     this.isLoading = true;
     try {
       // Crear credencial usando WebAuthn API del navegador
       const credential = await this.biometricService.createWebAuthnCredential(
-        this.registrationChallenge.challenge,
-        this.registrationChallenge.user
+        this.registrationChallenge.data.challenge,
+        this.registrationChallenge.data.user
       );
 
-      const result = await this.biometricService.completeWebAuthnRegistration(credential);
+      const result = await this.biometricService.completeWebAuthnRegistration(credential, this.username);
       
       this.currentStatus = result;
       this.statusChange.emit(result);
@@ -153,8 +156,8 @@ export class WebauthnComponent implements OnInit {
     try {
       // Obtener aserción usando WebAuthn API del navegador
       const assertion = await this.biometricService.getWebAuthnAssertion(
-        this.authenticationChallenge.challenge,
-        this.authenticationChallenge.allowCredentials || []
+        this.authenticationChallenge.data.challenge,
+        this.authenticationChallenge.data.allowCredentials || []
       );
 
       const result = await this.biometricService.completeWebAuthnAuthentication(assertion);

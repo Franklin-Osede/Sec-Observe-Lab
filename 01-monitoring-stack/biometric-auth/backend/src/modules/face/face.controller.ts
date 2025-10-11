@@ -1,8 +1,14 @@
 import { Controller, Post, Body, Get, Logger } from '@nestjs/common';
+import { IsString, IsNotEmpty } from 'class-validator';
 import { FaceService } from './face.service';
 
 export class FaceRecognitionDto {
+  @IsString()
+  @IsNotEmpty()
   username: string;
+  
+  @IsString()
+  @IsNotEmpty()
   faceData: string;
 }
 
@@ -15,7 +21,7 @@ export class FaceController {
   @Post('recognize')
   async recognizeFace(@Body() faceDto: FaceRecognitionDto) {
     try {
-      this.logger.log(`Reconocimiento facial para usuario: ${faceDto.username}`);
+      this.logger.log(`🔄 AUTO-RELOAD TEST - Reconocimiento facial para usuario: ${faceDto.username}`);
       
       const result = await this.faceService.recognizeFace(
         faceDto.username,
@@ -25,7 +31,7 @@ export class FaceController {
       return {
         success: true,
         data: result,
-        message: 'Reconocimiento facial exitoso'
+        message: 'Reconocimiento facial exitoso - AUTO-RELOAD TEST! 🔄'
       };
     } catch (error) {
       this.logger.error(`Error en reconocimiento facial: ${error.message}`);

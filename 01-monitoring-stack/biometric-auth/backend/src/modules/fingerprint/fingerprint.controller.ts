@@ -1,8 +1,14 @@
 import { Controller, Post, Body, Get, Param, Logger } from '@nestjs/common';
+import { IsString, IsNotEmpty } from 'class-validator';
 import { FingerprintService } from './fingerprint.service';
 
 export class FingerprintDto {
+  @IsString()
+  @IsNotEmpty()
   username: string;
+  
+  @IsString()
+  @IsNotEmpty()
   fingerprintData: string;
 }
 
