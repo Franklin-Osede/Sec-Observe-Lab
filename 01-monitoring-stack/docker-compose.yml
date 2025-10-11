@@ -82,29 +82,43 @@ services:
       - monitoring
     restart: unless-stopped
 
-  # Biometric Auth Service - Autenticación biométrica
-  biometric-auth:
+  # Biometric Auth Backend - API de autenticación biométrica
+  biometric-auth-backend:
     build:
-      context: ./biometric-auth
+      context: ./biometric-auth/backend
       dockerfile: Dockerfile
-    container_name: biometric-auth
+    container_name: biometric-auth-backend
     ports:
       - "3001:3001"
-    volumes:
-      - ./biometric-auth:/app
-      - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - REDIS_URL=redis://redis:6379
       - GRAFANA_URL=http://grafana:3000
       - WEBAUTHN_RP_ID=localhost
       - WEBAUTHN_RP_NAME=Sec-Observe-Lab
+      - PORT=3001
     networks:
       - monitoring
     restart: unless-stopped
     depends_on:
       - redis
       - grafana
+
+  # Biometric Auth Frontend - Interfaz de usuario
+  biometric-auth-frontend:
+    build:
+      context: ./biometric-auth/frontend
+      dockerfile: Dockerfile
+    container_name: biometric-auth-frontend
+    ports:
+      - "4201:80"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - monitoring
+    restart: unless-stopped
+    depends_on:
+      - biometric-auth-backend
 
   # Ethereum Exporter - Métricas de nodos Ethereum (Mock)
   ethereum-exporter:
